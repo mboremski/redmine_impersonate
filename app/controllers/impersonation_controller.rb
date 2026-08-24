@@ -35,6 +35,6 @@ class ImpersonationController < ApplicationController
       session.delete(:true_user_id)
     end
 
-    redirect_to :back
+    redirect_back_or_default home_path, referer: true
   end
 end
