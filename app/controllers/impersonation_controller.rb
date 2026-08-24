@@ -27,6 +27,8 @@ class ImpersonationController < ApplicationController
       # to activate 2FA; ApplicationController#check_twofa_activation would
       # then start the pairing (and send a code) on the target user's account.
       session.delete(:must_activate_twofa)
+
+      log_impersonation 'started', admin_user, impersonated_user
     end
 
     # Redirect to the home with the new impersonated user
@@ -35,12 +37,31 @@ class ImpersonationController < ApplicationController
 
   def destroy
     true_user = User.find_by_id(session[:true_user_id])
+    impersonated_user = User.current
 
     if true_user && true_user.active?
       self.logged_user = true_user
       session.delete(:true_user_id)
+
+      log_impersonation 'ended', true_user, impersonated_user
     end
 
     redirect_back_or_default home_path, referer: true
+  end
+
+  private
+
+  # Nachvollziehbarkeit der Identitaetsuebernahme (Vorgabe ISB).
+  # Schreibt nach log/production.log; die Zeilen sind ueber das Praefix
+  # "[impersonate]" filterbar.
+  def log_impersonation(event, admin_user, impersonated_user)
+    return unless logger
+
+    logger.warn(
+      "[impersonate] #{event} " \
+      "admin=#{admin_user.login}(id=#{admin_user.id}) " \
+      "target=#{impersonated_user.login}(id=#{impersonated_user.id}) " \
+      "ip=#{request.remote_ip}"
+    )
   end
 end
