@@ -26,9 +26,9 @@ module RedmineImpersonate
         return if !User.current.admin? || user == User.current || !user.active? || session[:true_user_id]
         return if context[:controller].action_name == 'new'
 
-        link = link_to l(:button_impersonate),
+        link = link_to sprite_icon('user', l(:button_impersonate)),
                        { controller: 'impersonation', action: 'create', user_id: user.id },
-                       method: :post, id: 'impersonate'
+                       method: :post, id: 'impersonate', class: 'icon icon-user'
 
         # Move link to contextual
         script = "<script>$('#impersonate').prependTo($('#content > .contextual').first())</script>".html_safe
