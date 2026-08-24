@@ -1,36 +1,21 @@
 module RedmineImpersonate
   module Hook
     class ViewListener < Redmine::Hook::ViewListener
-      # necessary for using content_tag in Listener
-      attr_accessor :output_buffer
-
-      # For some versions (redmine.org#19024) don't prepend directory root to
-      # `link_to` inside hook. Backport it.
-      def self.default_url_options
-        defaults = super
-
-        unless Redmine::Utils.relative_url_root.blank?
-          defaults[:script_name] ||= Redmine::Utils.relative_url_root
-        end
-
-        defaults
-      end
-
       # If user is impersonating, show message on the top
       def view_layouts_base_html_head(context = {})
         session = context[:controller].session
 
-        if session[:true_user_id]
-          true_user = User.find(session[:true_user_id])
-          impersonated_user = User.current
-          style = 'margin: 0; padding: 10px; border-width: 0 0 2px; background-image: none'
+        return unless session[:true_user_id]
 
-          content_tag :div, id: 'impersonation-bar', class: 'flash error', style: style do
-            concat link_to l(:button_cancel), { controller: 'impersonation', action: 'destroy' },
-                           method: :delete, style: 'float: right'
-            concat l(:notice_impersonating_user, user: impersonated_user.name)
-          end
-        end
+        impersonated_user = User.current
+        style = 'margin: 0; padding: 10px; border-width: 0 0 2px; background-image: none'
+
+        body =
+          link_to(l(:button_cancel), { controller: 'impersonation', action: 'destroy' },
+                  method: :delete, style: 'float: right') +
+          ERB::Util.html_escape(l(:notice_impersonating_user, user: impersonated_user.name))
+
+        content_tag :div, body, id: 'impersonation-bar', class: 'flash error', style: style
       end
 
       # Returns HTML we need to inject on pages when impersonation is needed
@@ -46,9 +31,9 @@ module RedmineImpersonate
                        method: :post, id: 'impersonate'
 
         # Move link to contextual
-        script = "<script>$('#impersonate').prependTo('#content > .contextual:first')</script>".html_safe
+        script = "<script>$('#impersonate').prependTo($('#content > .contextual').first())</script>".html_safe
 
-        link + script.html_safe
+        link + script
       end
 
       def view_people_show_details_bottom(context = {})

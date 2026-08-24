@@ -2,7 +2,7 @@ class ImpersonationController < ApplicationController
   before_action :require_login
   before_action :require_admin, only: [:create]
 
-  require_sudo_mode :create if Redmine::VERSION::STRING >= '3.1'
+  require_sudo_mode :create
 
   def create
     if !session[:true_user_id]
@@ -21,6 +21,12 @@ class ImpersonationController < ApplicationController
 
       # Don't require password change of target user
       session.delete(:pwd)
+
+      # Don't drag the admin into the target user's two-factor pairing.
+      # start_user_session sets this flag when the impersonated user still has
+      # to activate 2FA; ApplicationController#check_twofa_activation would
+      # then start the pairing (and send a code) on the target user's account.
+      session.delete(:must_activate_twofa)
     end
 
     # Redirect to the home with the new impersonated user
