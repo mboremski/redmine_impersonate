@@ -1,0 +1,3 @@
+de:
+  notice_impersonating_user: "Sie handeln derzeit als %{user}"
+  button_impersonate: "Identität übernehmen"
